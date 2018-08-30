@@ -13,11 +13,23 @@ class BotTest extends TestCase {
      * @group valid
      */
     public function getValidPageShouldReturn100Rows() {
-        ini_set('memory_limit', -1);
-        ini_set('error_reporting', E_ALL);
+        $date    = Carbon::parse( '2018-08-28' );
+        $bot     = new Bot();
+        $results = $bot->get( $date );
 
-        $date = Carbon::parse('2018-08-28');
-        $bot = new Bot();
-        $results = $bot->get($date);
+        $this->assertCount( 100, $results );
+    }
+
+    /**
+     * @test
+     * @group invalid
+     */
+    public function getInvalidPageShouldThrowException() {
+        $this->expectException( \Exception::class );
+        $date    = Carbon::parse( '2018-08-26' );
+        $bot     = new Bot();
+        $results = $bot->get( $date );
+        print_r( $results );
+
     }
 }

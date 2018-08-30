@@ -13,45 +13,50 @@ class Bot {
     protected $urlPrefix = 'http://www.wsj.com/mdc/public/page/2_3021-gaincomp-gainer-';
     protected $urlSuffix = '.html';
     protected $url;
+    protected $rows      = [];
 
     public function __construct() {
 
     }
 
+    /**
+     * @param \Carbon\Carbon $date
+     * @return array
+     * @throws \Exception
+     */
     public function get( Carbon $date ) {
         $this->setUrl( $date );
-
-        echo "\nabout to load content\n";
         $content = file_get_contents( $this->url );
+        $dom     = HtmlDomParser::str_get_html( $content );
+        $trs     = $dom->find( 'table.mdcTable tbody tr' );
+        array_shift( $trs ); // Remove the header rows.
 
-        //echo $content;
+        foreach ( $trs as $tr ):
+            $tds = $tr->find( 'td' );
 
-        echo "\n\nloading content"; flush();
+            //$rowNumber = $tds[ 0 ]->plaintext; // Not needed
+            $name    = $tds[ 1 ]->plaintext;
+            $price   = $tds[ 2 ]->plaintext;
+            $change  = $tds[ 3 ]->plaintext;
+            $percent = $tds[ 4 ]->plaintext;
+            $volume  = $tds[ 5 ]->plaintext;
 
+            $ticker = $this->parseOutTicker( $name );
 
-        //$dom = HtmlDomParser::str_get_html( $content )->plaintext;
-        echo "\n\nloaded content"; flush();
+            $this->rows[] = [
+                'ticker'  => $ticker,
+                'price'   => $price,
+                'change'  => $change,
+                'percent' => $percent,
+                'volume'  => $volume,
+            ];
+        endforeach;
 
+        if ( 0 == count( $this->rows ) ):
+            throw new \Exception( "No results. The date you passed in was probably a weekend or market holiday." );
+        endif;
 
-        $dom = HtmlDomParser::str_get_html( $content );
-
-        $table=$dom->find('table.mdcTable tbody',0);
-
-
-        echo $table->plaintext;
-//        $elems = $dom->find('table.mdcTable');
-//
-//
-//        foreach($elems as $article):
-//
-//        endforeach;
-//
-//        //$this->parseHtmlTableIntoArray( $content );
-//
-//
-//        print_r( $elem->plaintext );
-
-     //   echo $dom;
+        return $this->rows;
     }
 
     /**
@@ -61,36 +66,14 @@ class Bot {
         $this->url = $this->urlPrefix . $date->format( 'Ymd' ) . $this->urlSuffix;
     }
 
-
-    protected function parseHtmlTableIntoArray( string $pageContent ) {
-
-        $dom = HtmlDomParser::str_get_html( $pageContent );
-
-        $table = $dom->find('table[class=mdcTable]');
-
-
-        print_r( $table );
-
-        //discard white space
-//        $dom->preserveWhiteSpace = false;
-//
-//        //the table by its tag name
-//        $tables = $dom->getElementsByTagName('table');
-//
-//        //get all rows from the table
-//        $rows = $tables->item(0)->getElementsByTagName('tr');
-//
-//        // loop over the table rows
-//        foreach ($rows as $row)
-//        {
-//            // get each column by tag name
-//            $cols = $row->getElementsByTagName('td');
-//            // echo the values
-//            echo $cols->item(0)->nodeValue.'<br />';
-//            echo $cols->item(1)->nodeValue.'<br />';
-//            echo $cols->item(2)->nodeValue;
-//        }
-
-
+    /**
+     * @param string $name Example: Asta Funding (ASFI)
+     * @return string The ticker parsed out of the name field.
+     */
+    protected function parseOutTicker( string $name ): string {
+        preg_match( '/\((.*)\)/', $name, $matches );
+        return $matches[ 1 ];
     }
+
+
 }
