@@ -10,7 +10,7 @@
   ],
   "require": {
     "php": "^7.2",
-    "nesbot/carbon": "^1.33",
+    "nesbot/carbon": "^1.25",
     "sunra/php-simple-html-dom-parser": "^1.5"
   },
   "require-dev": {
