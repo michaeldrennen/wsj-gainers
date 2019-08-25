@@ -28,6 +28,11 @@ class Bot {
         $this->setUrl( $date );
         $content = file_get_contents( $this->url );
         $dom     = HtmlDomParser::str_get_html( $content );
+
+        if(false === $dom):
+            throw new \Exception("HtmlDomParser::str_get_html() returned false. Check the URL.");
+        endif;
+
         $trs     = $dom->find( 'table.mdcTable tbody tr' );
         array_shift( $trs ); // Remove the header rows.
 
